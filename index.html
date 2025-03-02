@@ -222,34 +222,6 @@
       margin-top: 10px;
     }
 
-    #favorites {
-      margin-top: 20px;
-    }
-
-    #favorites h3 {
-      font-size: 20px;
-      color: #ffffff;
-    }
-
-    #favorites ul {
-      list-style: none;
-      padding: 0;
-    }
-
-    #favorites li button {
-      background-color: #000000; 
-      border: none;
-      color: white;
-      padding: 5px 10px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background-color 0.3s ease;
-    }
-    
-    #favorites li button:hover {
-      background-color: #ffffff; 
-    }
 
     .map-side {
       flex: 1;
@@ -421,17 +393,10 @@
         <p id="sunrise"></p><br>
         <p id="sunset"></p><br>
         <p id="airQuality"></p><br>
-        <div id="addToFavorites" class="icon-button">
-          <img src="favourite.png" alt="Add to Favorites">
-        </div>
         <div class="forecast">
           <h3>5-Day Forecast</h3>
           <div id="forecastItems"></div>
         </div>
-      </div>
-      <div id="favorites">
-        <h3>Favorites</h3>
-        <ul id="favoriteCities"></ul>
       </div>
       <div class="error" id="error"></div>
     </div>
@@ -460,8 +425,6 @@
     const sunset = document.getElementById("sunset");
     const airQuality = document.getElementById("airQuality");
     const weatherInfo = document.getElementById("weatherInfo");
-    const favoritesList = document.getElementById("favoriteCities");
-    const addToFavoritesBtn = document.getElementById("addToFavorites");
     const forecastItems = document.getElementById("forecastItems");
     const error = document.getElementById("error");
 
@@ -588,14 +551,6 @@
     }
 
     tempToggle.addEventListener("change", updateTemperature);
-
-    addToFavoritesBtn.addEventListener("click", () => {
-      const city = cityName.textContent;
-      if (!city) return;
-      const li = document.createElement("li");
-      li.innerHTML = `${city} <button onclick="this.parentElement.remove()">❌</button>`;
-      favoritesList.appendChild(li);
-    });
 
     searchBtn.addEventListener("click", () => fetchWeather(cityInput.value));
 
