@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(-45deg, #1e3c72, #2a5298, #6a11cb, #2575fc);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      color: #e0e0e0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .app-container {
+      display: flex;
+      width: 90%;
+      max-width: 1200px;
+      height: 90vh;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .weather-side {
+      flex: 1;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      overflow-y: auto;
+    }
+
+    .search-box {
+      display: flex;
+      gap: 30px;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+
+    #cityInput {
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      width: 200px;
+      background: rgb(0, 0, 0);
+      color: #ffffff;
+    }
+
+    .icon-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border: 2px solid #74b9ff;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    .icon-button:hover {
+      background-color: rgb(0, 0, 0);
+      border-color: #ffffff;
+    }
+
+    .icon-button img {
+      width: 24px;
+      height: 24px;
+      filter: invert(1);
+    }
+
+    .weather-side::-webkit-scrollbar {
+      display: none;
+    }
+    
+    .weather-side {
+      scrollbar-width: none; 
+      -ms-overflow-style: none; 
+    }
+
+    #weatherInfo {
+      margin-top: 20px;
+      width: 100%;
+      animation: fadeIn 1s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #weatherInfo h2 {
+      font-size: 24px;
+      margin-bottom: 10px;
+      color: #ffffff;
+    }
+
+    #weatherInfo p {
+      font-size: 18px;
+      margin: 5px 0;
+      color: #e0e0e0;
+    }
+
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      justify-content: center; 
+      gap: 10px;
+      margin-top: 10px;
+    }
+    
+    .toggle-switch {
+      position: relative;
+      width: 60px; 
+      height: 30px; 
+    }
+    
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.4s;
+      border-radius: 34px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1); 
+    }
+    
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 24px; 
+      width: 24px; 
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); 
+    }
+    
+    input:checked + .slider {
+      background-color: #74b9ff; 
+    }
+    
+    input:checked + .slider:before {
+      transform: translateX(30px); 
+    }
+    
+    .slider:before {
+      transition: transform 0.4s ease, background-color 0.4s ease;
+    }
+    
+    .toggle-switch:hover .slider {
+      background-color: #b3d7ff; 
+    }
+    
+    .toggle-switch:hover .slider:before {
+      background-color: #f0f0f0; 
+    }
+
+    .forecast {
+      margin-top: 20px;
+      width: 100%;
+    }
+
+    .forecast-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .forecast-item:last-child {
+      border-bottom: none;
+    }
+
+    .forecast-item img {
+      width: 40px;
+      height: 40px;
+    }
+
+    .forecast-item p {
+      margin: 0;
+      font-size: 16px;
+      color: #e0e0e0;
+    }
+
+    .error {
+      color: #ff6b6b;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+
+    #favorites {
+      margin-top: 20px;
+    }
+
+    #favorites h3 {
+      font-size: 20px;
+      color: #ffffff;
+    }
+
+    #favorites ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    #favorites li button {
+      background-color: #000000; 
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s ease;
+    }
+    
+    #favorites li button:hover {
+      background-color: #ffffff; 
+    }
+
+    .map-side {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="weather-side">
+      <h1>Live Weather App</h1><br>
+      <div class="search-box">
+        <input type="text" id="cityInput" placeholder="Enter city name">
+        <div id="searchBtn" class="icon-button">
+          <img src="search.png" alt="Search">
+        </div>
+      </div><br>
+      <div id="currentLocation" class="icon-button">
+        <img src="my.png" alt="Use Current Location">
+      </div>
+      <div id="weatherInfo" style="display: none;">
+        <center><div class="toggle-container">
+          <label>°C</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="tempToggle">
+            <span class="slider"></span>
+          </label>
+          <label>°F</label>
+        </div>
+        <h2 id="cityName"></h2><br>
+        <p id="temperature"></p><br>
+        <p id="weatherCondition"></p><br>
+        <p id="humidity"></p><br>
+        <p id="windSpeed"></p><br>
+        <p id="pressure"></p><br>
+        <p id="visibility"></p><br>
+        <p id="cloudiness"></p><br>
+        <p id="sunrise"></p><br>
+        <p id="sunset"></p><br>
+        <p id="airQuality"></p><br>
+        <div id="addToFavorites" class="icon-button">
+          <img src="favourite.png" alt="Add to Favorites">
+        </div>
+        <div class="forecast">
+          <h3>5-Day Forecast</h3>
+          <div id="forecastItems"></div>
+        </div>
+      </div>
+      <div id="favorites">
+        <h3>Favorites</h3>
+        <ul id="favoriteCities"></ul>
+      </div>
+      <div class="error" id="error"></div>
+    </div>
+    <div class="map-side">
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    const apiKey = "9050f6a541147ab38d79b232d214ad43";
+
+    const cityInput = document.getElementById("cityInput");
+    const searchBtn = document.getElementById("searchBtn");
+    const currentLocationBtn = document.getElementById("currentLocation");
+    const cityName = document.getElementById("cityName");
+    const temperature = document.getElementById("temperature");
+    const tempToggle = document.getElementById("tempToggle");
+    const weatherCondition = document.getElementById("weatherCondition");
+    const humidity = document.getElementById("humidity");
+    const windSpeed = document.getElementById("windSpeed");
+    const pressure = document.getElementById("pressure");
+    const visibility = document.getElementById("visibility");
+    const cloudiness = document.getElementById("cloudiness");
+    const sunrise = document.getElementById("sunrise");
+    const sunset = document.getElementById("sunset");
+    const airQuality = document.getElementById("airQuality");
+    const weatherInfo = document.getElementById("weatherInfo");
+    const favoritesList = document.getElementById("favoriteCities");
+    const addToFavoritesBtn = document.getElementById("addToFavorites");
+    const forecastItems = document.getElementById("forecastItems");
+    const error = document.getElementById("error");
+
+    let currentTempCelsius = null;
+    let map, marker;
+
+    function initMap(lat, lon) {
+      if (map) map.remove();
+      map = L.map("map").setView([lat, lon], 10);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap contributors"
+      }).addTo(map);
+      marker = L.marker([lat, lon]).addTo(map);
+    }
+
+    async function fetchWeather(city) {
+      try {
+        const [weatherResponse, forecastResponse] = await Promise.all([
+          fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`),
+          fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric`),
+        ]);
+
+        const weatherData = await weatherResponse.json();
+        const forecastData = await forecastResponse.json();
+
+        if (weatherData.cod !== 200 || forecastData.cod !== "200") {
+          throw new Error(weatherData.message || "City not found!");
+        }
+
+        displayWeather(weatherData);
+        displayForecast(forecastData);
+        fetchAirQuality(weatherData.coord.lat, weatherData.coord.lon);
+        error.textContent = "";
+      } catch (err) {
+        showError(err.message || "An error occurred. Please try again.");
+      }
+    }
+
+    async function fetchWeatherByCoords(lat, lon) {
+      try {
+        const [weatherResponse, forecastResponse] = await Promise.all([
+          fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`),
+          fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`),
+        ]);
+
+        const weatherData = await weatherResponse.json();
+        const forecastData = await forecastResponse.json();
+
+        if (weatherData.cod !== 200 || forecastData.cod !== "200") {
+          throw new Error(weatherData.message || "Unable to fetch weather data!");
+        }
+
+        displayWeather(weatherData);
+        displayForecast(forecastData);
+        fetchAirQuality(lat, lon);
+        error.textContent = "";
+      } catch (err) {
+        showError(err.message || "An error occurred. Please try again.");
+      }
+    }
+
+    async function fetchAirQuality(lat, lon) {
+      try {
+        const response = await fetch(`http://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`);
+        const data = await response.json();
+        const aqi = data.list[0].main.aqi;
+        airQuality.textContent = `Air Quality: ${getAQIDescription(aqi)}`;
+      } catch (err) {
+        airQuality.textContent = "Air Quality: N/A";
+      }
+    }
+
+    function getAQIDescription(aqi) {
+      switch (aqi) {
+        case 1: return "Good";
+        case 2: return "Fair";
+        case 3: return "Moderate";
+        case 4: return "Poor";
+        case 5: return "Very Poor";
+        default: return "Unknown";
+      }
+    }
+
+    function displayWeather(data) {
+      cityName.textContent = data.name;
+      currentTempCelsius = data.main.temp;
+      updateTemperature();
+      weatherCondition.textContent = `Condition: ${data.weather[0].description}`;
+      humidity.textContent = `Humidity: ${data.main.humidity}%`;
+      windSpeed.textContent = `Wind Speed: ${data.wind.speed} m/s`;
+      pressure.textContent = `Pressure: ${data.main.pressure} hPa`;
+      visibility.textContent = `Visibility: ${data.visibility / 1000} km`;
+      cloudiness.textContent = `Cloudiness: ${data.clouds.all}%`;
+      sunrise.textContent = `Sunrise: ${new Date(data.sys.sunrise * 1000).toLocaleTimeString()}`;
+      sunset.textContent = `Sunset: ${new Date(data.sys.sunset * 1000).toLocaleTimeString()}`;
+      initMap(data.coord.lat, data.coord.lon);
+      weatherInfo.style.display = "block";
+    }
+
+    function displayForecast(data) {
+      forecastItems.innerHTML = "";
+      const forecasts = data.list.filter((item, index) => index % 8 === 0); 
+
+      forecasts.forEach((forecast) => {
+        const date = new Date(forecast.dt * 1000).toLocaleDateString();
+        const temp = forecast.main.temp;
+        const icon = forecast.weather[0].icon;
+
+        const forecastItem = document.createElement("div");
+        forecastItem.className = "forecast-item";
+        forecastItem.innerHTML = `
+          <p>${date}</p>
+          <img src="https://openweathermap.org/img/wn/${icon}.png" alt="${forecast.weather[0].description}">
+          <p>${temp}°C</p>
+        `;
+        forecastItems.appendChild(forecastItem);
+      });
+    }
+
+    function updateTemperature() {
+      temperature.textContent = tempToggle.checked
+        ? `Temperature: ${(currentTempCelsius * 9/5 + 32).toFixed(1)}°F`
+        : `Temperature: ${currentTempCelsius}°C`;
+    }
+
+    tempToggle.addEventListener("change", updateTemperature);
+
+    addToFavoritesBtn.addEventListener("click", () => {
+      const city = cityName.textContent;
+      if (!city) return;
+      const li = document.createElement("li");
+      li.innerHTML = `${city} <button onclick="this.parentElement.remove()">❌</button>`;
+      favoritesList.appendChild(li);
+    });
+
+    searchBtn.addEventListener("click", () => fetchWeather(cityInput.value));
+
+    currentLocationBtn.addEventListener("click", () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            fetchWeatherByCoords(latitude, longitude);
+          },
+          (error) => {
+            showError("Unable to retrieve your location.");
+          }
+        );
+      } else {
+        showError("Geolocation is not supported by your browser.");
+      }
+    });
+
+    function showError(message) {
+      error.textContent = message;
+      error.style.display = "block";
+      weatherInfo.style.display = "none";
+    }
+  </script>
+</body>
+</html>
